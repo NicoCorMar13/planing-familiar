@@ -198,6 +198,43 @@ function subscribeCompraRealtime(fam) {
     .subscribe();
 }
 
+// ======================
+// Planning semanal (Supabase)
+// ======================
+
+async function loadPlanningSupabase(fam) {
+  const { data, error } = await sb
+    .from("meal_planning")
+    .select("day,value")
+    .eq("fam", fam);
+
+  if (error) throw error;
+
+  // Convertimos array -> objeto { Lunes: "...", ... }
+  const out = {};
+  (data || []).forEach(r => { out[r.day] = r.value; });
+  return out;
+}
+
+async function saveDaySupabase(fam, dia, value) {
+  await ensureFamilyExists(fam);
+
+  const { error } = await sb
+    .from("meal_planning")
+    .upsert(
+      [{
+        fam,
+        day: dia,
+        value: value,
+        updated_at: new Date().toISOString()
+      }],
+      { onConflict: "fam,day" }
+    );
+
+  if (error) throw error;
+}
+
+
 
 // Convierte una clave VAPID en formato base64 a Uint8Array
 function urlBase64ToUint8Array(base64String) {
@@ -279,69 +316,60 @@ function renderInputs() {
 
 // Carga la planificación desde el backend
 async function loadPlanning() {
-  const fam = getFam();//Obtiene el codigo de familia
-  if (!fam) return;//Si no hay codigo, sale
+  const fam = getFam();
+  if (!fam) return;
 
-  const r = await fetch(`${API_BASE}/api/planning?fam=${encodeURIComponent(fam)}`);//Hace una peticion al backend para obtener la planificación
-  const j = await r.json().catch(() => ({}));//Intenta parsear la respuesta como JSON
-  const data = j.data || {};//Obtiene los datos de planificación o un objeto vacío si no hay datos
+  try {
+    const data = await loadPlanningSupabase(fam);
 
-  // Rellena los inputs con los datos recibidos, sin sobreescribir si el input está enfocado
-  DIAS.forEach(d => {
-    const el = document.getElementById(d);
-    if (el && document.activeElement !== el)//Evitamos sobreescribir si el input está enfocado
-      el.value = data[d] || "";
-  });
+    // Rellena los inputs con los datos recibidos, sin sobreescribir si el input está enfocado
+    DIAS.forEach(d => {
+      const el = document.getElementById(d);
+      if (el && document.activeElement !== el) el.value = data[d] || "";
+    });
 
-  // Si se abre desde notificación con ?dia=...
-  const params = new URLSearchParams(location.search);
-  const dia = params.get("dia");
-  if (dia && DIAS.includes(dia)) {
-    const el = document.getElementById(dia);
-    if (el) {
-      el.classList.add("highlight");
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => el.classList.remove("highlight"), 2500);
+    // Si se abre desde notificación con ?dia=...
+    const params = new URLSearchParams(location.search);
+    const dia = params.get("dia");
+    if (dia && DIAS.includes(dia)) {
+      const el = document.getElementById(dia);
+      if (el) {
+        el.classList.add("highlight");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => el.classList.remove("highlight"), 2500);
+      }
     }
+  } catch (err) {
+    console.error(err);
+    alert("Error cargando planning desde Supabase (mira la consola).");
   }
 }
+
 
 // Guarda el valor de un día en el backend
 async function saveDay(dia) {
   const fam = getFam();
-  if (!fam) return alert("Primero guarda el código de familia.");//Si no hay codigo de familia, muestra alerta y sale
+  if (!fam) return alert("Primero guarda el código de familia.");
 
-  const value = document.getElementById(dia).value;//Obtiene el valor del input del día
+  const value = document.getElementById(dia).value;
 
-  // Envía el valor al backend
-  const r = await fetch(`${API_BASE}/api/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fam,//Codigo de familia para agrupar
-      dia,//Día que se está guardando
-      value,//Nuevo texto
-      url: `/notificacion-tiempo-real/?dia=${encodeURIComponent(dia)}`,//URL para abrir desde la notificación
-      deviceId//ID del dispositivo para no notificarse a sí mismo
-    })
-  });
-
-  //Si falla el guardado, muestra alerta y sale
-  if (!r.ok) {
-    const j = await r.json().catch(() => ({}));
-    console.error(j);
-    return alert("Error guardando (mira la consola).");
+  try {
+    await saveDaySupabase(fam, dia, value);
+    await loadPlanning(); // refresca
+  } catch (err) {
+    console.error(err);
+    alert("Error guardando el día en Supabase (mira la consola).");
   }
-
-  await loadPlanning();//Recarga la planificación para reflejar los cambios
 }
+
 
 // Evento de boton que establece el código de familia
 btnSetFam.addEventListener("click", async () => {
   const v = famInput.value.trim();//Lee el valor del input y elimina espacios
   if (!v) return alert("Pega un código de familia.");//Si está vacío, muestra alerta y sale
   setFam(v);//Guarda el código de familia en localStorage
-  initCompra(getFam());//Inicializa la lista de la compra con la familia guardada
+  await ensureFamilyExists(v);//Asegura que la familia existe en la base de datos
+  await initCompra(v);//Inicializa la lista de la compra con la familia guardada
   await loadPlanning();//Carga la planificación asociada a ese código
   alert("Código de familia guardado ✅");//Muestra mensaje de éxito
 });
