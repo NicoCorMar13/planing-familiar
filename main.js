@@ -612,7 +612,13 @@ async function saveDay(dia) {
 
   try {
     await saveDaySupabase(fam, dia, value);
-    await fetch(`${API_BASE}/api/notify`, {
+    await loadPlanning(); // refresca
+  } catch (err) {
+    console.error(err);
+    alert("Error guardando el día en Supabase (mira la consola).");
+  }
+  
+  await fetch(`${API_BASE}/api/notify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -624,11 +630,6 @@ async function saveDay(dia) {
         deviceId
       })
     });
-    await loadPlanning(); // refresca
-  } catch (err) {
-    console.error(err);
-    alert("Error guardando el día en Supabase (mira la consola).");
-  }
 }
 
 
