@@ -1,7 +1,7 @@
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
 // URL del backend en Vercel
-const API_BASE = "https://planing-familiar-backend.vercel.app/";
+const API_BASE = "https://planing-familiar-backend.vercel.app";
 
 // VAPID PUBLIC KEY generada para este proyecto
 const VAPID_PUBLIC_KEY = "BBbV8RuSxZyOGAtD53suSbyp-QoE1H6WhI6Wy7rL0RINNsbI2OYtXOHFn3YU8bIEU4lsOW1rQW1laZOx2AAvee4";
