@@ -1,3 +1,5 @@
+const CACHE_NAME = "planing-familiar-v4";
+
 // Servicio Worker para gestionar las notificaciones push, se dispara al escuchar un push
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};//Obtiene los datos del push
