@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="estilos.css">
+  <link rel="icon" href="icono-192.png" type="image/png" sizes="32x32"/>
+  <title>Planning Familiar</title>
+</head>
+<body>
+  <h1>Planning semanal</h1>
+
+  <div class="top">
+    <span class="pill">Código familia</span>
+    <input id="fam" placeholder="pega aquí el código" style="min-width:280px" />
+    <button id="btnSetFam">Guardar</button>
+    <button id="btnPush">Activar notificaciones</button>
+  </div>
+
+  <p class="muted">
+    Consejo: en móvil, usa “Instalar app” (PWA) para que las notificaciones sean más fiables.
+  </p>
+
+  <div id="list"></div>
+
+  <script src="./main.js"></script>
+</body>
+</html>

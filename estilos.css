@@ -1,0 +1,83 @@
+/*Estilos generales del proyecto*/
+body {
+    font-family: system-ui, Arial;/*Usamos la fuente del sistema operativo, si no estuviera disponible usariamos Arial*/
+    max-width: 760px;/*Limita el ancho máximo del contenido*/
+    margin: 24px auto;/*Centrado horizontal con margen superior e inferior*/
+    padding: 0 16px;/*Padding horizontal para que no toque los bordes*/
+}
+
+/*Estilo de cada fila (día)*/
+.row { 
+    display: grid;/*Usamos grid para distribuir los elementos*/
+    grid-template-columns: 120px 1fr 110px;/*Tres columnas: día, input, botón*/
+    gap: 10px;/*Espacio entre columnas*/
+    align-items: center;/*Alinea verticalmente al centro*/
+    margin: 10px 0;/*Margen vertical entre filas, entre dias*/
+}
+
+/*Estilo general de los inputs (sin forzar ancho)*/
+input { 
+    padding: 10px;/*Espacio interno para que el texto no este pegado a los bordes*/
+    font-size: 16px;/*Evita el zoom automatico en iOS al tocar inputs*/
+    box-sizing: border-box;/*Incluye el padding y el border en el ancho total*/
+}
+
+/*Solo el input del planing (dentro de cada row) ocupa todo su hueco*/
+.row input {
+    width: 100%;/*Ocupa todo el ancho de su columna*/
+    min-width: 0;/*Clave para que no empuje*/
+}
+
+/*Estilo general de los botones*/
+button { 
+    padding: 10px;/*Espacio interno para que el texto no este pegado a los bordes*/
+    cursor: pointer;/*Cambia el cursor al pasar por encima*/
+}
+
+/*Hacemos que el boton ocupe su columna*/
+.row button {
+    width: 100%;
+}
+
+/*Barra superior*/
+.top { 
+    display:flex;/*Usamos flexbox para distribuir los elementos ya que no necesitamos columnas fijas*/
+    gap: 10px;/*Espacio entre elementos*/
+    flex-wrap: wrap;/*Permite que los elementos se envuelvan en varias líneas en pantallas pequeñas*/
+    align-items: center;/*Alinea verticalmente al centro*/
+    margin-bottom: 18px;/*Espacio debajo de la barra*/
+}
+
+/*Estilo de los elementos con clase pill (bordes redondeados)*/
+.pill { 
+    padding: 8px 10px;/*Espacio interno*/
+    background:#f3f3f3;/*Fondo gris claro*/
+    border-radius: 999px;/*Bordes completamente redondeados*/
+}
+
+/*Resaltado del dia cuando venimos desde la notificacion*/
+.highlight { 
+    outline: 3px solid #000;/*Dibuja un borde externo*/
+    border-radius: 6px;/*Bordes ligeramente redondeados*/
+}
+
+/*Texto secundario (instrucciones, ayudas)*/
+.muted { 
+    color:#666;/*Color gris oscuro*/
+    font-size: 14px;/*Tamaño de fuente más pequeño*/
+}
+
+/* Móvil: el día arriba, y debajo input + botón */
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 1fr 110px; /* input grande + botón */
+    grid-template-areas:/* Define las áreas del grid */
+      "day day"/* primera fila: día ocupa dos columnas */
+      "input btn";/* segunda fila: input y botón */
+    gap: 10px;/*Espacio entre filas y columnas*/
+  }
+
+  .row > div:first-child { grid-area: day; }/*el primer div (día) ocupa el área day*/
+  .row input { grid-area: input; width: 100%; }/*el input ocupa el área input y todo su ancho*/
+  .row button { grid-area: btn; width: 100%; }/*el botón ocupa el área btn y todo su ancho*/
+}

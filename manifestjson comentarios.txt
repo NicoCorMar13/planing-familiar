@@ -1,0 +1,14 @@
+{
+  "name": "Planning Familiar", //Nombre de la aplicacion
+  "short_name": "Planning", //Nombre corto para la aplicacion
+  "start_url": "/notificacion-tiempo-real/", //URL que se abre cuando el usuario abre la aplicacion instalada
+  "display": "standalone", //Define como se muestra la aplicacion, siendo "standalone" el parametro que indica que no queremos barra de direcciones ni botones del navegador y 
+  que muestre la app nativa. Otras opciones serian: "browser", para que se vea como una web normal, "fullscreen", para que se vea a pantalla completa, y "minimal-ui", que esta casi obsoleto
+  "background_color": "#ffffff", //Color de fondo de la pantalla de carga de la app
+  "theme_color": "#ffffff", //Color principal de la app, que afecta a la barra superior en Android y al color del sistema cuando esta abierta
+  "scope": "/notificacion-tiempo-real/", //Define que URLs pertenecen a la app. La PWA solo puede navegar e interceptar con el Service Worker dentro de este scope. Muy importante: evita que la app "salga" de su carpeta
+  "icons": [ //Lista de iconos
+    { "src": "/notificacion-tiempo-real/icono-192.png", "sizes": "192x192", "type": "image/png" }, //Icono principal para pantalla de inicio y el launcher de Android. 192x192 es obligatorio para PWA
+    { "src": "/notificacion-tiempo-real/icono-512.png", "sizes": "512x512", "type": "image/png" } //Icono de alta resolucion usado para pantalla de instalacion, iconos grandes y store/previews. 512X512 tambien es obligatorio
+  ]
+}
