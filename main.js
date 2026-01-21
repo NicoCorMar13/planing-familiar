@@ -1,7 +1,7 @@
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
 // URL del backend en Vercel
-const API_BASE = "https://notificacion-tiempo-real-backend-we.vercel.app";
+const API_BASE = "https://planing-familiar-backend.vercel.app/";
 
 // VAPID PUBLIC KEY generada para este proyecto
 const VAPID_PUBLIC_KEY = "BBbV8RuSxZyOGAtD53suSbyp-QoE1H6WhI6Wy7rL0RINNsbI2OYtXOHFn3YU8bIEU4lsOW1rQW1laZOx2AAvee4";
@@ -441,6 +441,18 @@ btnAddExpense?.addEventListener("click", async () => {
     expenses.unshift(row);
     renderExpenses();
     updateRemaining();
+    await fetch(`${API_BASE}/api/notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fam,
+        type: "budget",
+        title: "Nuevo gasto",
+        body: `${place}: ${amount.toFixed(2)} €`,
+        url: `/?section=budget`,
+        deviceId
+      })
+    });
 
     inpPlace.value = "";
     inpAmount.value = "";
@@ -484,7 +496,7 @@ function urlBase64ToUint8Array(base64String) {
 // Registra el Service Worker
 async function registerSW() {
   if (!("serviceWorker" in navigator)) throw new Error("Tu navegador no soporta Service Worker");
-  return navigator.serviceWorker.register("/notificacion-tiempo-real/swV3.js");
+  return navigator.serviceWorker.register("/notificacion-tiempo-real/swV4.js");
 }
 
 // Habilita las notificaciones push, se ejecuta al pulsar el boton para activar las notificaciones
@@ -574,6 +586,16 @@ async function loadPlanning() {
         setTimeout(() => el.classList.remove("highlight"), 2500);
       }
     }
+    const section = params.get("section");
+    if (section === "budget") {
+      const el = document.getElementById("budgetCard");
+      if (el) {
+        el.classList.add("highlight");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => el.classList.remove("highlight"), 2500);
+      }
+    }
+
   } catch (err) {
     console.error(err);
     alert("Error cargando planning desde Supabase (mira la consola).");
@@ -590,6 +612,18 @@ async function saveDay(dia) {
 
   try {
     await saveDaySupabase(fam, dia, value);
+    await fetch(`${API_BASE}/api/notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fam,
+        type: "meal",
+        title: "Comida actualizada",
+        body: `Se actualizó ${dia}`,
+        url: `/?dia=${encodeURIComponent(dia)}`,
+        deviceId
+      })
+    });
     await loadPlanning(); // refresca
   } catch (err) {
     console.error(err);
