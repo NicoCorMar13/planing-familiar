@@ -378,8 +378,9 @@ btnSetFam.addEventListener("click", async () => {
 btnPush.addEventListener("click", enablePush);
 
 // Inicialización automatica al cargar la página
-(function init() {//Función autoejecutable para inicializar la app
+(async function init() {//Función autoejecutable para inicializar la app
   renderInputs();//Crea los inputs para los días de la semana
+  const fam = getFam();
 
   // Si no hay familia guardada, sugerimos una (la compartes con tu familia)
   if (!getFam()) {
@@ -387,7 +388,14 @@ btnPush.addEventListener("click", enablePush);
     famInput.value = suggested;
   } else {// Si ya hay familia guardada, la cargamos y cargamos la planificación
     famInput.value = getFam();
-    loadPlanning();
+    try {
+      await ensureFamilyExists(fam);
+      await loadPlanning();
+      await initCompra(fam);
+    } catch (err) {
+      console.error(err);
+      alert("Error cargando datos (mira la consola).");
+    }
   }
 
   /*// “casi” tiempo real gratis: polling cada 5s
