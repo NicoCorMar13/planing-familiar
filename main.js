@@ -356,19 +356,56 @@ function renderExpenses() {
 
   for (const e of expenses) {
     const li = document.createElement("li");
-    li.className = "item";
+    li.className = "expense-item";
+
     const date = new Date(e.created_at).toLocaleString();
 
-    li.innerHTML = `
-      <span></span>
-      <span class="text">
-        <strong>${e.place}</strong> — ${Number(e.amount).toFixed(2)} €<br/>
-        <small style="opacity:.65">${date}</small>
-      </span>
+    // Columna izquierda: botón borrar
+    const del = document.createElement("button");
+    del.className = "icon-btn";
+    del.type = "button";
+    del.title = "Eliminar gasto";
+    del.textContent = "🗑️";
+
+    del.addEventListener("click", async () => {
+      if (!confirm(`¿Eliminar gasto de "${e.place}" (${Number(e.amount).toFixed(2)} €)?`)) return;
+
+      try {
+        await deleteExpenseById(e.id);
+        expenses = expenses.filter(x => x.id !== e.id);
+        renderExpenses();
+        updateRemaining();
+      } catch (err) {
+        console.error(err);
+        alert("Error eliminando gasto");
+      }
+    });
+
+    // Columna derecha: contenido
+    const content = document.createElement("div");
+    content.className = "expense-content";
+    content.innerHTML = `
+      <div class="expense-line">
+        <strong>${e.place}</strong>
+        <span>${Number(e.amount).toFixed(2)} €</span>
+      </div>
+      <small class="expense-date">${date}</small>
     `;
 
+    li.appendChild(del);
+    li.appendChild(content);
     expensesList.appendChild(li);
   }
+}
+
+
+async function deleteExpenseById(id) {
+  const { error } = await sb
+    .from("budget_expenses")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
 }
 
 // Eventos
