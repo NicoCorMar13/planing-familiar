@@ -1,3 +1,7 @@
+const SUPABASE_URL = "https://cqnnxxcymelkwlcywokz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_eJ19otAOlp1ckDtDDct7JQ_HS-ySz5J";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
 // URL del backend en Vercel
@@ -23,6 +27,181 @@ function getFam() {
 function setFam(v) {
   localStorage.setItem("fam", v);
 }
+
+// ======================
+// Supabase - helpers
+// ======================
+async function ensureFamilyExists(fam) {
+  const { error } = await supabase
+    .from("families")
+    .upsert([{ fam }], { onConflict: "fam" });
+
+  if (error) throw error;
+}
+
+// ======================
+// Lista de compra (Supabase)
+// ======================
+
+const inpProducto = document.getElementById("inpProducto");
+const btnAdd = document.getElementById("btnAdd");
+const btnEliminar = document.getElementById("btnEliminar");
+const listaCompra = document.getElementById("listaCompra");
+
+let compra = [];
+let compraChannel = null;
+
+async function initCompra(fam) {
+  await ensureFamilyExists(fam);
+
+  compra = await loadCompraSupabase(fam);
+  renderCompra();
+  subscribeCompraRealtime(fam);
+}
+
+async function loadCompraSupabase(fam) {
+  const { data, error } = await supabase
+    .from("shopping_items")
+    .select("*")
+    .eq("fam", fam)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+async function addProductoSupabase(fam, text) {
+  const { data, error } = await supabase
+    .from("shopping_items")
+    .insert([{ fam, text }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function setCheckedSupabase(id, checked) {
+  const { error } = await supabase
+    .from("shopping_items")
+    .update({ checked })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+async function deleteCheckedSupabase(fam) {
+  const { error } = await supabase
+    .from("shopping_items")
+    .delete()
+    .eq("fam", fam)
+    .eq("checked", true);
+
+  if (error) throw error;
+}
+
+// Eventos UI
+btnAdd?.addEventListener("click", () => addProductoUI());
+inpProducto?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addProductoUI();
+});
+
+btnEliminar?.addEventListener("click", async () => {
+  const fam = getFam();
+  if (!fam) return alert("Primero guarda el código de familia");
+
+  try {
+    await deleteCheckedSupabase(fam);
+    compra = compra.filter(i => !i.checked);
+    renderCompra();
+  } catch (err) {
+    console.error(err);
+    alert("Error eliminando en Supabase");
+  }
+});
+
+async function addProductoUI() {
+  const fam = getFam();
+  const text = (inpProducto.value || "").trim();
+  if (!fam) return alert("Primero guarda el código de familia");
+  if (!text) return;
+
+  try {
+    await ensureFamilyExists(fam);
+    const nuevo = await addProductoSupabase(fam, text);
+    compra.unshift(nuevo);
+    renderCompra();
+
+    inpProducto.value = "";
+    inpProducto.focus();
+  } catch (err) {
+    console.error(err);
+    alert("Error guardando en Supabase");
+  }
+}
+
+function toggleChecked(id, value) {
+  const i = compra.find(x => x.id === id);
+  if (!i) return;
+  i.checked = value;
+
+  setCheckedSupabase(id, value).catch(err => {
+    console.error(err);
+    alert("Error actualizando checkbox");
+  });
+}
+
+function renderCompra() {
+  if (!listaCompra) return;
+  listaCompra.innerHTML = "";
+
+  if (compra.length === 0) {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `
+      <span></span>
+      <span class="text" style="opacity:.6">No hay productos todavía.</span>
+    `;
+    listaCompra.appendChild(li);
+    return;
+  }
+
+  for (const item of compra) {
+    const li = document.createElement("li");
+    li.className = "item";
+
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = !!item.checked;
+    chk.addEventListener("change", () => toggleChecked(item.id, chk.checked));
+
+    const span = document.createElement("span");
+    span.className = "text";
+    span.textContent = item.text;
+
+    li.appendChild(chk);
+    li.appendChild(span);
+    listaCompra.appendChild(li);
+  }
+}
+
+function subscribeCompraRealtime(fam) {
+  if (compraChannel) supabase.removeChannel(compraChannel);
+
+  compraChannel = supabase
+    .channel("shopping_items_changes")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "shopping_items",
+      filter: `fam=eq.${fam}`
+    }, async () => {
+      compra = await loadCompraSupabase(fam);
+      renderCompra();
+    })
+    .subscribe();
+}
+
 
 // Convierte una clave VAPID en formato base64 a Uint8Array
 function urlBase64ToUint8Array(base64String) {
@@ -166,6 +345,7 @@ btnSetFam.addEventListener("click", async () => {
   const v = famInput.value.trim();//Lee el valor del input y elimina espacios
   if (!v) return alert("Pega un código de familia.");//Si está vacío, muestra alerta y sale
   setFam(v);//Guarda el código de familia en localStorage
+  initCompra(getFam());//Inicializa la lista de la compra con la familia guardada
   await loadPlanning();//Carga la planificación asociada a ese código
   alert("Código de familia guardado ✅");//Muestra mensaje de éxito
 });
@@ -190,121 +370,3 @@ btnPush.addEventListener("click", enablePush);
   setInterval(loadPlanning, 5000);
   Este codigo comentado recargaria la pagina cada 5 segundos, pero nos impide escribir bien, ya que nos quita el texto que estamos escribiendo si no lo guardamos rapido*/
 })();
-
-// ======================
-// Lista de la compra (localStorage)
-// ======================
-
-const LS_KEY_COMPRA = "lista_compra_v1";
-
-const inpProducto = document.getElementById("inpProducto");
-const btnAdd = document.getElementById("btnAdd");
-const btnEliminar = document.getElementById("btnEliminar");
-const listaCompra = document.getElementById("listaCompra");
-
-let compra = loadCompra();
-renderCompra();
-
-// Añadir con botón
-btnAdd.addEventListener("click", () => {
-  addProducto();
-});
-
-// Añadir con Enter
-inpProducto.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addProducto();
-});
-
-btnEliminar.addEventListener("click", () => {
-  eliminarMarcados();
-});
-
-function addProducto() {
-  const text = (inpProducto.value || "").trim();
-  if (!text) return;
-
-  const item = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
-    text,
-    checked: false,
-    createdAt: Date.now()
-  };
-
-  compra.push(item);
-  saveCompra(compra);
-  renderCompra();
-
-  inpProducto.value = "";
-  inpProducto.focus();
-
-  // Más adelante: aquí dispararemos sync + notificación al resto
-}
-
-function eliminarMarcados() {
-  const before = compra.length;
-  compra = compra.filter(i => !i.checked);
-
-  if (compra.length === before) return; // no había marcados
-
-  saveCompra(compra);
-  renderCompra();
-
-  // Más adelante: aquí dispararemos sync + notificación al resto
-}
-
-function toggleChecked(id, value) {
-  const i = compra.find(x => x.id === id);
-  if (!i) return;
-  i.checked = value;
-  saveCompra(compra);
-}
-
-function renderCompra() {
-  listaCompra.innerHTML = "";
-
-  if (compra.length === 0) {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.innerHTML = `
-      <span></span>
-      <span class="text" style="opacity:.6">No hay productos todavía.</span>
-    `;
-    listaCompra.appendChild(li);
-    return;
-  }
-
-  // Orden: más nuevos arriba (puedes cambiarlo si quieres)
-  const sorted = [...compra].sort((a,b) => b.createdAt - a.createdAt);
-
-  for (const item of sorted) {
-    const li = document.createElement("li");
-    li.className = "item";
-
-    const chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.checked = !!item.checked;
-    chk.addEventListener("change", () => toggleChecked(item.id, chk.checked));
-
-    const span = document.createElement("span");
-    span.className = "text";
-    span.textContent = item.text;
-
-    li.appendChild(chk);
-    li.appendChild(span);
-    listaCompra.appendChild(li);
-  }
-}
-
-function loadCompra() {
-  try {
-    const raw = localStorage.getItem(LS_KEY_COMPRA);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCompra(arr) {
-  localStorage.setItem(LS_KEY_COMPRA, JSON.stringify(arr));
-}
-
