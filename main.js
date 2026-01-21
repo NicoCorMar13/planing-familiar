@@ -496,7 +496,7 @@ function urlBase64ToUint8Array(base64String) {
 // Registra el Service Worker
 async function registerSW() {
   if (!("serviceWorker" in navigator)) throw new Error("Tu navegador no soporta Service Worker");
-  return navigator.serviceWorker.register("/notificacion-tiempo-real/swV4.js");
+  return navigator.serviceWorker.register("/planing-familiar/swV4.js");
 }
 
 // Habilita las notificaciones push, se ejecuta al pulsar el boton para activar las notificaciones
@@ -617,7 +617,7 @@ async function saveDay(dia) {
     console.error(err);
     alert("Error guardando el día en Supabase (mira la consola).");
   }
-  
+
   await fetch(`${API_BASE}/api/notify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,13 +1,13 @@
 {
   "name": "Planning Familiar",
   "short_name": "Planning",
-  "start_url": "/notificacion-tiempo-real/",
+  "start_url": "/planing-familiar/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
-  "scope": "/notificacion-tiempo-real/",
+  "scope": "/planing-familiar/",
   "icons": [
-    { "src": "/notificacion-tiempo-real/icono-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/notificacion-tiempo-real/icono-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/planing-familiar/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/planing-familiar/icono-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
