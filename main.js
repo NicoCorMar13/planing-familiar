@@ -190,3 +190,121 @@ btnPush.addEventListener("click", enablePush);
   setInterval(loadPlanning, 5000);
   Este codigo comentado recargaria la pagina cada 5 segundos, pero nos impide escribir bien, ya que nos quita el texto que estamos escribiendo si no lo guardamos rapido*/
 })();
+
+// ======================
+// Lista de la compra (localStorage)
+// ======================
+
+const LS_KEY_COMPRA = "lista_compra_v1";
+
+const inpProducto = document.getElementById("inpProducto");
+const btnAdd = document.getElementById("btnAdd");
+const btnEliminar = document.getElementById("btnEliminar");
+const listaCompra = document.getElementById("listaCompra");
+
+let compra = loadCompra();
+renderCompra();
+
+// Añadir con botón
+btnAdd.addEventListener("click", () => {
+  addProducto();
+});
+
+// Añadir con Enter
+inpProducto.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addProducto();
+});
+
+btnEliminar.addEventListener("click", () => {
+  eliminarMarcados();
+});
+
+function addProducto() {
+  const text = (inpProducto.value || "").trim();
+  if (!text) return;
+
+  const item = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+    text,
+    checked: false,
+    createdAt: Date.now()
+  };
+
+  compra.push(item);
+  saveCompra(compra);
+  renderCompra();
+
+  inpProducto.value = "";
+  inpProducto.focus();
+
+  // Más adelante: aquí dispararemos sync + notificación al resto
+}
+
+function eliminarMarcados() {
+  const before = compra.length;
+  compra = compra.filter(i => !i.checked);
+
+  if (compra.length === before) return; // no había marcados
+
+  saveCompra(compra);
+  renderCompra();
+
+  // Más adelante: aquí dispararemos sync + notificación al resto
+}
+
+function toggleChecked(id, value) {
+  const i = compra.find(x => x.id === id);
+  if (!i) return;
+  i.checked = value;
+  saveCompra(compra);
+}
+
+function renderCompra() {
+  listaCompra.innerHTML = "";
+
+  if (compra.length === 0) {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `
+      <span></span>
+      <span class="text" style="opacity:.6">No hay productos todavía.</span>
+    `;
+    listaCompra.appendChild(li);
+    return;
+  }
+
+  // Orden: más nuevos arriba (puedes cambiarlo si quieres)
+  const sorted = [...compra].sort((a,b) => b.createdAt - a.createdAt);
+
+  for (const item of sorted) {
+    const li = document.createElement("li");
+    li.className = "item";
+
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = !!item.checked;
+    chk.addEventListener("change", () => toggleChecked(item.id, chk.checked));
+
+    const span = document.createElement("span");
+    span.className = "text";
+    span.textContent = item.text;
+
+    li.appendChild(chk);
+    li.appendChild(span);
+    listaCompra.appendChild(li);
+  }
+}
+
+function loadCompra() {
+  try {
+    const raw = localStorage.getItem(LS_KEY_COMPRA);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCompra(arr) {
+  localStorage.setItem(LS_KEY_COMPRA, JSON.stringify(arr));
+}
+

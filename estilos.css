@@ -67,7 +67,84 @@ button {
     font-size: 14px;/*Tamaño de fuente más pequeño*/
 }
 
-/* Móvil: el día arriba, y debajo input + botón */
+.card{
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 16px 0;
+}
+
+.header-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.row-add{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.row-add input{
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+.btn{
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.btn.primary{ 
+    background: #111; 
+    color: #fff; 
+}
+
+.btn.danger{ 
+    background: #f2f2f2; 
+    color: #111; 
+}
+
+.list{
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+}
+
+.item{
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.item input[type="checkbox"]{
+  width: 22px;
+  height: 22px;
+}
+
+.item .text{
+  font-size: 16px;
+  word-break: break-word;
+}
+
+.hint{
+  margin: 10px 0 0 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Móvil*/
 @media (max-width: 600px) {
   .row {
     grid-template-columns: 1fr 110px; /* input grande + botón */
@@ -80,4 +157,11 @@ button {
   .row > div:first-child { grid-area: day; }/*el primer div (día) ocupa el área day*/
   .row input { grid-area: input; width: 100%; }/*el input ocupa el área input y todo su ancho*/
   .row button { grid-area: btn; width: 100%; }/*el botón ocupa el área btn y todo su ancho*/
+
+  .row-add{
+    grid-template-columns: 1fr;
+  }
+  .btn{ 
+    width: 100%; 
+  }
 }
