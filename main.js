@@ -1,7 +1,3 @@
-const SUPABASE_URL = "https://cqnnxxcymelkwlcywokz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_eJ19otAOlp1ckDtDDct7JQ_HS-ySz5J";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
 // URL del backend en Vercel
@@ -32,7 +28,7 @@ function setFam(v) {
 // Supabase - helpers
 // ======================
 async function ensureFamilyExists(fam) {
-  const { error } = await supabase
+  const { error } = await sb
     .from("families")
     .upsert([{ fam }], { onConflict: "fam" });
 
@@ -60,7 +56,7 @@ async function initCompra(fam) {
 }
 
 async function loadCompraSupabase(fam) {
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from("shopping_items")
     .select("*")
     .eq("fam", fam)
@@ -71,7 +67,7 @@ async function loadCompraSupabase(fam) {
 }
 
 async function addProductoSupabase(fam, text) {
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from("shopping_items")
     .insert([{ fam, text }])
     .select()
@@ -82,7 +78,7 @@ async function addProductoSupabase(fam, text) {
 }
 
 async function setCheckedSupabase(id, checked) {
-  const { error } = await supabase
+  const { error } = await sb
     .from("shopping_items")
     .update({ checked })
     .eq("id", id);
@@ -91,7 +87,7 @@ async function setCheckedSupabase(id, checked) {
 }
 
 async function deleteCheckedSupabase(fam) {
-  const { error } = await supabase
+  const { error } = await sb
     .from("shopping_items")
     .delete()
     .eq("fam", fam)
@@ -186,9 +182,9 @@ function renderCompra() {
 }
 
 function subscribeCompraRealtime(fam) {
-  if (compraChannel) supabase.removeChannel(compraChannel);
+  if (compraChannel) sb.removeChannel(compraChannel);
 
-  compraChannel = supabase
+  compraChannel = sb
     .channel("shopping_items_changes")
     .on("postgres_changes", {
       event: "*",

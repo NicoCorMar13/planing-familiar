@@ -1,5 +1,4 @@
 //Este archivo maneja las peticiones al backend para obtener la planificación
-import { createClient } from "@supabase/supabase-js";//Importa la librería de Supabase para interactuar con la base de datos
 
 // Habilita CORS para permitir peticiones desde el frontend
 function enableCors(req, res) {
@@ -25,10 +24,8 @@ export default async function handler(req, res) {
     const fam = req.query.fam;//Obtiene el código de familia desde los parámetros de la consulta
     if (!fam) return res.status(400).json({ error: "Missing fam" });//Si no hay código de familia, responde con error 400
 
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);//Crea el cliente de Supabase usando las variables de entorno
-
     // Consulta la tabla "planning" para obtener los datos asociados al código de familia
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("planning")
       .select("data, updated_at")
       .eq("fam", fam)
@@ -38,7 +35,7 @@ export default async function handler(req, res) {
 
     // Si no hay datos para esa familia, crea una entrada vacía y responde con datos vacíos
     if (!data) {
-      const { error: insErr } = await supabase.from("planning").insert({ fam, data: {} });//Inserta una fila vacía para esa familia
+      const { error: insErr } = await sb.from("planning").insert({ fam, data: {} });//Inserta una fila vacía para esa familia
       if (insErr) throw insErr;//Si hay error al insertar, lo lanza
       return res.status(200).json({ data: {}, updatedAt: null });//Responde con datos vacíos
     }

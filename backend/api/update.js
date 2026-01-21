@@ -1,6 +1,5 @@
 //Este archivo maneja las actualizaciones del planning y envía notificaciones push a los dispositivos suscritos cuando hay cambios
 
-import { createClient } from "@supabase/supabase-js";//Importa la librería de Supabase para interactuar con la base de datos
 import webpush from "web-push";//Importa la librería web-push para enviar notificaciones push a los navegadores
 
 // Habilita CORS para permitir peticiones desde el frontend
@@ -37,11 +36,8 @@ export default async function handler(req, res) {
     const { fam, dia, value, url, deviceId } = req.body || {};//Obtiene los datos enviados en el cuerpo de la petición: fam(código de familia), dia(día a actualizar), value(nuevo valor), url(url para la notificación), deviceId(identificador del dispositivo para evitar auto-notificaciones)
     if (!fam || !DIAS.includes(dia)) return res.status(400).json({ error: "Missing fam or invalid dia" });//Si falta el código de familia o el día es inválido, responde con error 400
 
-    // Crea el cliente de Supabase usando las variables de entorno
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-
     // Leemos el planning actual
-    const { data: row, error: selErr } = await supabase
+    const { data: row, error: selErr } = await sb
       .from("planning")
       .select("data")
       .eq("fam", fam)
@@ -53,15 +49,15 @@ export default async function handler(req, res) {
 
     // Guardamos el planning
     if (!row) {//Si no existe el planning para esa familia, lo insertamos
-      const { error: insErr } = await supabase.from("planning").insert({ fam, data: next });
+      const { error: insErr } = await sb.from("planning").insert({ fam, data: next });
       if (insErr) throw insErr;//Si hay error al insertar, lo lanza
     } else {//Si ya existe, lo actualizamos
-      const { error: updErr } = await supabase.from("planning").update({ data: next }).eq("fam", fam);//Actualiza la fila correspondiente al código de familia
+      const { error: updErr } = await sb.from("planning").update({ data: next }).eq("fam", fam);//Actualiza la fila correspondiente al código de familia
       if (updErr) throw updErr;// Si hay error al actualizar, lo lanza
     }
 
     // Enviamos la notificación push a la familia (menos este dispositivo si deviceId está presente)
-    const { data: subs, error: subErr } = await supabase
+    const { data: subs, error: subErr } = await sb
       .from("subscriptions")//
       .select("endpoint,p256dh,auth,device_id")//
       .eq("fam", fam);//Obtiene todas las suscripciones asociadas a la familia
@@ -96,7 +92,7 @@ export default async function handler(req, res) {
 
     // Elimina las suscripciones inválidas
     if (toDelete.length) {
-      await supabase.from("subscriptions").delete().in("endpoint", toDelete);
+      await sb.from("subscriptions").delete().in("endpoint", toDelete);
     }
 
     return res.status(200).json({ ok: true });//Responde con éxito si todo va bien

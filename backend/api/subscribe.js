@@ -1,7 +1,5 @@
 //Este archivo maneja las suscripciones push enviadas desde el frontend, sin este archivo el navegador se suscribe pero el servidor no sabria a quien enviar las notificaciones
 
-import { createClient } from "@supabase/supabase-js";//Importa la librería de Supabase para interactuar con la base de datos, permitiendo ller y escribir datos desde la base de datos
-
 // Funcion auxiliar para habilitar CORS y permitir peticiones desde el frontend
 function enableCors(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://nicocormar13.github.io");//Permite peticiones desde este origen específico
@@ -27,9 +25,7 @@ export default async function handler(req, res) {
     if (!fam || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return res.status(400).json({ error: "Missing fam/subscription" });
     }
-
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);//Crea el cliente de Supabase usando las variables de entorno para interactuar con la base de datos
-
+    
     // Prepara los datos a insertar o actualizar en la tabla "subscriptions"
     const payload = {
       fam,//Código de familia para agrupar suscripciones
@@ -40,7 +36,7 @@ export default async function handler(req, res) {
     };
 
     // Inserta o actualiza la suscripción en la tabla "subscriptions", usando upsert para evitar duplicados basados en el endpoint
-    const { error } = await supabase
+    const { error } = await sb
       .from("subscriptions")
       .upsert(payload, { onConflict: "endpoint" });//"upsert" inserta una nueva fila o actualiza la existente si ya hay una con el mismo endpoint. "onConflict" especifica la columna que se usa para detectar duplicados. "endpoint" es único para cada suscripción push, evita duplicados.
 
