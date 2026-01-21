@@ -144,6 +144,11 @@ button {
   opacity: 0.7;
 }
 
+/* Fila con 3 inputs/botón (lugar, cantidad, añadir) */
+#budgetCard .row-add{
+  grid-template-columns: 1fr 160px auto;
+}
+
 /* Móvil*/
 @media (max-width: 600px) {
   .row {
@@ -163,5 +168,10 @@ button {
   }
   .btn{ 
     width: 100%; 
+  }
+
+  /*Fila con 3 inputs/botón (lugar, cantidad, añadir) */
+  #budgetCard .row-add{
+    grid-template-columns: 1fr;
   }
 }

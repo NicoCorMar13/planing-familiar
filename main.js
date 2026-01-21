@@ -233,6 +233,204 @@ async function saveDaySupabase(fam, dia, value) {
 
   if (error) throw error;
 }
+// ======================
+
+// ======================
+// Presupuesto mensual (Supabase)
+// ======================
+
+const inpBudget = document.getElementById("inpBudget");
+const btnSaveBudget = document.getElementById("btnSaveBudget");
+const inpPlace = document.getElementById("inpPlace");
+const inpAmount = document.getElementById("inpAmount");
+const btnAddExpense = document.getElementById("btnAddExpense");
+const btnClearExpenses = document.getElementById("btnClearExpenses");
+const expensesList = document.getElementById("expensesList");
+const budgetMonthLabel = document.getElementById("budgetMonthLabel");
+const budgetRemaining = document.getElementById("budgetRemaining");
+
+let currentMonth = getMonthKey(); // 'YYYY-MM'
+let currentBudget = 0;
+let expenses = [];
+
+function getMonthKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+async function initBudget(fam) {
+  currentMonth = getMonthKey();
+  if (budgetMonthLabel) budgetMonthLabel.textContent = currentMonth;
+
+  await ensureFamilyExists(fam);
+
+  await loadBudgetMonth(fam, currentMonth);
+  await loadExpenses(fam, currentMonth);
+  renderExpenses();
+  updateRemaining();
+}
+
+async function loadBudgetMonth(fam, month) {
+  const { data, error } = await sb
+    .from("budget_month")
+    .select("initial_budget")
+    .eq("fam", fam)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  currentBudget = data?.initial_budget ?? 0;
+  if (inpBudget) inpBudget.value = currentBudget ? String(currentBudget) : "";
+}
+
+async function saveBudgetMonth(fam, month, amount) {
+  const { error } = await sb
+    .from("budget_month")
+    .upsert(
+      [{ fam, month, initial_budget: amount, updated_at: new Date().toISOString() }],
+      { onConflict: "fam,month" }
+    );
+
+  if (error) throw error;
+}
+
+async function loadExpenses(fam, month) {
+  const { data, error } = await sb
+    .from("budget_expenses")
+    .select("*")
+    .eq("fam", fam)
+    .eq("month", month)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  expenses = data || [];
+}
+
+async function addExpense(fam, month, place, amount) {
+  const { data, error } = await sb
+    .from("budget_expenses")
+    .insert([{ fam, month, place, amount }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function clearExpenses(fam, month) {
+  const { error } = await sb
+    .from("budget_expenses")
+    .delete()
+    .eq("fam", fam)
+    .eq("month", month);
+
+  if (error) throw error;
+}
+
+function sumExpenses() {
+  return expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+}
+
+function updateRemaining() {
+  if (!budgetRemaining) return;
+  const remaining = Number(currentBudget) - sumExpenses();
+  budgetRemaining.textContent = `${remaining.toFixed(2)} €`;
+}
+
+function renderExpenses() {
+  if (!expensesList) return;
+  expensesList.innerHTML = "";
+
+  if (expenses.length === 0) {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `
+      <span></span>
+      <span class="text" style="opacity:.6">No hay gastos este mes.</span>
+    `;
+    expensesList.appendChild(li);
+    return;
+  }
+
+  for (const e of expenses) {
+    const li = document.createElement("li");
+    li.className = "item";
+    const date = new Date(e.created_at).toLocaleString();
+
+    li.innerHTML = `
+      <span></span>
+      <span class="text">
+        <strong>${e.place}</strong> — ${Number(e.amount).toFixed(2)} €<br/>
+        <small style="opacity:.65">${date}</small>
+      </span>
+    `;
+
+    expensesList.appendChild(li);
+  }
+}
+
+// Eventos
+btnSaveBudget?.addEventListener("click", async () => {
+  const fam = getFam();
+  if (!fam) return alert("Primero guarda el código de familia");
+
+  const val = Number(inpBudget.value || 0);
+  if (Number.isNaN(val) || val < 0) return alert("Presupuesto inválido");
+
+  try {
+    currentBudget = val;
+    await saveBudgetMonth(fam, currentMonth, val);
+    updateRemaining();
+  } catch (err) {
+    console.error(err);
+    alert("Error guardando presupuesto");
+  }
+});
+
+btnAddExpense?.addEventListener("click", async () => {
+  const fam = getFam();
+  if (!fam) return alert("Primero guarda el código de familia");
+
+  const place = (inpPlace.value || "").trim();
+  const amount = Number(inpAmount.value || 0);
+
+  if (!place) return alert("Escribe el lugar");
+  if (Number.isNaN(amount) || amount <= 0) return alert("Cantidad inválida");
+
+  try {
+    const row = await addExpense(fam, currentMonth, place, amount);
+    expenses.unshift(row);
+    renderExpenses();
+    updateRemaining();
+
+    inpPlace.value = "";
+    inpAmount.value = "";
+    inpPlace.focus();
+  } catch (err) {
+    console.error(err);
+    alert("Error añadiendo gasto");
+  }
+});
+
+btnClearExpenses?.addEventListener("click", async () => {
+  const fam = getFam();
+  if (!fam) return alert("Primero guarda el código de familia");
+
+  if (!confirm("¿Eliminar TODOS los gastos del mes actual?")) return;
+
+  try {
+    await clearExpenses(fam, currentMonth);
+    expenses = [];
+    renderExpenses();
+    updateRemaining();
+  } catch (err) {
+    console.error(err);
+    alert("Error limpiando gastos");
+  }
+});
+// ======================
 
 
 
@@ -368,10 +566,16 @@ btnSetFam.addEventListener("click", async () => {
   const v = famInput.value.trim();//Lee el valor del input y elimina espacios
   if (!v) return alert("Pega un código de familia.");//Si está vacío, muestra alerta y sale
   setFam(v);//Guarda el código de familia en localStorage
-  await ensureFamilyExists(v);//Asegura que la familia existe en la base de datos
-  await initCompra(v);//Inicializa la lista de la compra con la familia guardada
-  await loadPlanning();//Carga la planificación asociada a ese código
-  alert("Código de familia guardado ✅");//Muestra mensaje de éxito
+  try {
+    await ensureFamilyExists(v);//Asegura que la familia existe en la base de datos
+    await initCompra(v);//Inicializa la lista de la compra con la familia guardada
+    await loadPlanning();//Carga la planificación asociada a ese código
+    await initBudget(v);//Inicializa el presupuesto mensual con la familia guardada
+    alert("Código de familia guardado ✅");//Muestra mensaje de éxito
+  }catch(err) {
+    console.error(err);
+    alert("Error inicializando datos (mira la consola).");
+  }  
 });
 
 // Evento de boton que activa las notificaciones push
@@ -392,6 +596,7 @@ btnPush.addEventListener("click", enablePush);
       await ensureFamilyExists(fam);
       await loadPlanning();
       await initCompra(fam);
+      initBudget(fam);
     } catch (err) {
       console.error(err);
       alert("Error cargando datos (mira la consola).");
