@@ -7,7 +7,15 @@ self.addEventListener("push", (event) => {
   const options = {//Opciones de la notificación
     body: data.body || "",//Cuerpo de la notificación
     icon: "/planing-familiar/icono-192.png",//Icono de la notificación
-    data: { url: data.url || "./" }//Datos adicionales, como la URL a abrir al hacer clic
+    badge: "/planing-familiar/icono-192.png",//Icono pequeño para dispositivos compatibles------
+    tag: data.tag || "planing",//Etiqueta para agrupar notificaciones similares----
+    renotify: true,//Forzar re-notificación si ya existe una con la misma etiqueta----
+    vibrate: [100, 50, 100],//Patrón de vibración para dispositivos compatibles----
+    requireInteraction: false,//Si la notificación debe permanecer hasta que el usuario interactúe----
+    data: { url: data.url || "./" },//Datos adicionales, como la URL a abrir al hacer clic
+    actions: [
+      { action: "open", title: "Abrir", icon: "/planing-familiar/icono-192.png" }
+    ],
   };
 
   event.waitUntil(self.registration.showNotification(title, options));//Muestra la notificación, "waitUntil" asegura que el SW no se cierre antes de mostrarla
