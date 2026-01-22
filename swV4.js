@@ -16,23 +16,22 @@ self.addEventListener("push", (event) => {
 // Maneja el clic en la notificación
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();//Cierra la notificación al hacer clic
-  const url = event.notification.data?.url || "./";//Obtiene la URL a abrir desde los datos de la notificación, si no la obtiene, usa la raíz(./)
+  const rawUrl = event.notification?.data?.url || "./";//Obtiene la URL a abrir desde los datos de la notificación, si no la obtiene, usa la raíz(./)
+  const targetUrl = new URL(rawUrl, self.location.origin).href;//Crea una URL absoluta basada en la URL del SW
 
   // Abre la URL en una nueva ventana o enfoca una existente, usando "waitUntil" para mantener el SW activo hasta completar la acción
   event.waitUntil((async () => {
     const wins = await clients.matchAll({ type: "window", includeUncontrolled: true });//Obtiene todas las ventanas abiertas bajo el control del SW
     // Si ya hay una pestaña abierta, la enfocamos y navegamos
-    /*for (const c of allClients) {
+    for (const c of wins) {
       if ("focus" in c) {
         await c.focus();
-        c.navigate(url);
+        //Si navigate está disponible, navegamos a la URL objetivo
+        if ("navigate" in c) await c.navigate(targetUrl);
         return;
       }
-    }*/
-    for (const w of wins) {//Revisa cada ventana abierta
-      if (w.url.startsWith(self.location.origin) && "focus" in w) return w.focus();//Si la ventana ya está abierta en nuestro origen, la enfoca y sale
     }
     // Si no, abrimos nueva
-    await clients.openWindow(url);
+    await clients.openWindow(targetUrl);
   })());
 });
