@@ -22,12 +22,15 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil((async () => {
     const wins = await clients.matchAll({ type: "window", includeUncontrolled: true });//Obtiene todas las ventanas abiertas bajo el control del SW
     // Si ya hay una pestaña abierta, la enfocamos y navegamos
-    for (const c of allClients) {
+    /*for (const c of allClients) {
       if ("focus" in c) {
         await c.focus();
         c.navigate(url);
         return;
       }
+    }*/
+    for (const w of wins) {//Revisa cada ventana abierta
+      if (w.url.startsWith(self.location.origin) && "focus" in w) return w.focus();//Si la ventana ya está abierta en nuestro origen, la enfoca y sale
     }
     // Si no, abrimos nueva
     await clients.openWindow(url);
