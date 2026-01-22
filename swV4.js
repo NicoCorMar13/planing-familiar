@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Notificacion";//Título de la notificación
   const options = {//Opciones de la notificación
     body: data.body || "",//Cuerpo de la notificación
-    icon: "/notificacion-tiempo-real/icono-192.png",//Icono de la notificación
+    icon: "/planing-familiar/icono-192.png",//Icono de la notificación
     data: { url: data.url || "./" }//Datos adicionales, como la URL a abrir al hacer clic
   };
 

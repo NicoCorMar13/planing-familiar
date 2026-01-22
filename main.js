@@ -47,6 +47,7 @@ const listaCompra = document.getElementById("listaCompra");
 let compra = [];
 let compraChannel = null;
 
+// Inicializa la lista de la compra segun el codigo familiar
 async function initCompra(fam) {
   await ensureFamilyExists(fam);
 
@@ -55,6 +56,7 @@ async function initCompra(fam) {
   subscribeCompraRealtime(fam);
 }
 
+// Carga los items de la compra desde Supabase
 async function loadCompraSupabase(fam) {
   const { data, error } = await sb
     .from("shopping_items")
@@ -66,6 +68,7 @@ async function loadCompraSupabase(fam) {
   return data;
 }
 
+// Añade un item a la compra en Supabase con el codigo familiar
 async function addProductoSupabase(fam, text) {
   const { data, error } = await sb
     .from("shopping_items")
@@ -77,6 +80,7 @@ async function addProductoSupabase(fam, text) {
   return data;
 }
 
+// Actualiza el estado "checked" de un item en Supabase
 async function setCheckedSupabase(id, checked) {
   const { error } = await sb
     .from("shopping_items")
@@ -86,6 +90,7 @@ async function setCheckedSupabase(id, checked) {
   if (error) throw error;
 }
 
+// Elimina los items marcados como "checked" en Supabase
 async function deleteCheckedSupabase(fam) {
   const { error } = await sb
     .from("shopping_items")
@@ -96,12 +101,16 @@ async function deleteCheckedSupabase(fam) {
   if (error) throw error;
 }
 
-// Eventos UI
+// ======================
+// Eventos UI Lista de compra
+// ======================
+// Boton con el que añadimos un producto a la lista de la compra
 btnAdd?.addEventListener("click", () => addProductoUI());
 inpProducto?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addProductoUI();
 });
 
+// Boton con el que eliminamos los productos marcados como comprados
 btnEliminar?.addEventListener("click", async () => {
   const fam = getFam();
   if (!fam) return alert("Primero guarda el código de familia");
@@ -115,7 +124,12 @@ btnEliminar?.addEventListener("click", async () => {
     alert("Error eliminando en Supabase");
   }
 });
+// ======================
 
+// ======================
+// Funciones UI Lista de compra
+// ======================
+// Añade un producto a la UI y a Supabase
 async function addProductoUI() {
   const fam = getFam();
   const text = (inpProducto.value || "").trim();
@@ -136,6 +150,7 @@ async function addProductoUI() {
   }
 }
 
+// Cambia el estado "checked" de un item en la UI y en Supabase
 function toggleChecked(id, value) {
   const i = compra.find(x => x.id === id);
   if (!i) return;
@@ -147,11 +162,12 @@ function toggleChecked(id, value) {
   });
 }
 
+// Renderiza la lista de la compra en la UI
 function renderCompra() {
-  if (!listaCompra) return;
-  listaCompra.innerHTML = "";
+  if (!listaCompra) return;// Si no existe el elemento, salimos
+  listaCompra.innerHTML = "";// Limpiamos la lista antes de renderizar
 
-  if (compra.length === 0) {
+  if (compra.length === 0) {// Si no hay items, mostramos mensaje
     const li = document.createElement("li");
     li.className = "item";
     li.innerHTML = `
@@ -162,7 +178,7 @@ function renderCompra() {
     return;
   }
 
-  for (const item of compra) {
+  for (const item of compra) {// Recorremos los items y los añadimos a la lista
     const li = document.createElement("li");
     li.className = "item";
 
@@ -181,6 +197,7 @@ function renderCompra() {
   }
 }
 
+// Suscripción en tiempo real a cambios en la lista de la compra
 function subscribeCompraRealtime(fam) {
   if (compraChannel) sb.removeChannel(compraChannel);
 
@@ -197,11 +214,12 @@ function subscribeCompraRealtime(fam) {
     })
     .subscribe();
 }
+// ======================
 
 // ======================
 // Planning semanal (Supabase)
 // ======================
-
+// Carga la planificación semanal desde Supabase
 async function loadPlanningSupabase(fam) {
   const { data, error } = await sb
     .from("meal_planning")
@@ -216,6 +234,7 @@ async function loadPlanningSupabase(fam) {
   return out;
 }
 
+// Guarda el valor de un día en Supabase
 async function saveDaySupabase(fam, dia, value) {
   await ensureFamilyExists(fam);
 
@@ -253,12 +272,14 @@ let currentMonth = getMonthKey(); // 'YYYY-MM'
 let currentBudget = 0;
 let expenses = [];
 
+// Obtiene la clave del mes actual en formato 'YYYY-MM'
 function getMonthKey(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
 }
 
+// Inicializa el presupuesto mensual segun el codigo familiar
 async function initBudget(fam) {
   currentMonth = getMonthKey();
   if (budgetMonthLabel) budgetMonthLabel.textContent = currentMonth;
@@ -271,6 +292,7 @@ async function initBudget(fam) {
   updateRemaining();
 }
 
+// Carga el presupuesto mensual desde Supabase
 async function loadBudgetMonth(fam, month) {
   const { data, error } = await sb
     .from("budget_month")
@@ -285,6 +307,7 @@ async function loadBudgetMonth(fam, month) {
   if (inpBudget) inpBudget.value = currentBudget ? String(currentBudget) : "";
 }
 
+// Guarda el presupuesto mensual en Supabase
 async function saveBudgetMonth(fam, month, amount) {
   const { error } = await sb
     .from("budget_month")
@@ -296,6 +319,7 @@ async function saveBudgetMonth(fam, month, amount) {
   if (error) throw error;
 }
 
+// Carga los gastos del mes desde Supabase
 async function loadExpenses(fam, month) {
   const { data, error } = await sb
     .from("budget_expenses")
@@ -308,6 +332,7 @@ async function loadExpenses(fam, month) {
   expenses = data || [];
 }
 
+// Añade un gasto en Supabase
 async function addExpense(fam, month, place, amount) {
   const { data, error } = await sb
     .from("budget_expenses")
@@ -319,6 +344,7 @@ async function addExpense(fam, month, place, amount) {
   return data;
 }
 
+// Elimina todos los gastos del mes en Supabase
 async function clearExpenses(fam, month) {
   const { error } = await sb
     .from("budget_expenses")
@@ -329,16 +355,19 @@ async function clearExpenses(fam, month) {
   if (error) throw error;
 }
 
+// Suma el total de gastos
 function sumExpenses() {
   return expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
 }
 
+// Actualiza el presupuesto restante en la UI
 function updateRemaining() {
   if (!budgetRemaining) return;
   const remaining = Number(currentBudget) - sumExpenses();
   budgetRemaining.textContent = `${remaining.toFixed(2)} €`;
 }
 
+// Renderiza la lista de gastos en la UI
 function renderExpenses() {
   if (!expensesList) return;
   expensesList.innerHTML = "";
@@ -354,6 +383,7 @@ function renderExpenses() {
     return;
   }
 
+  // Recorremos los gastos y los añadimos a la lista
   for (const e of expenses) {
     const li = document.createElement("li");
     li.className = "expense-item";
@@ -367,6 +397,7 @@ function renderExpenses() {
     del.title = "Eliminar gasto";
     del.textContent = "🗑️";
 
+    // Evento borrar gasto
     del.addEventListener("click", async () => {
       if (!confirm(`¿Eliminar gasto de "${e.place}" (${Number(e.amount).toFixed(2)} €)?`)) return;
 
@@ -398,7 +429,7 @@ function renderExpenses() {
   }
 }
 
-
+// Elimina un gasto por su ID en Supabase
 async function deleteExpenseById(id) {
   const { error } = await sb
     .from("budget_expenses")
@@ -408,14 +439,18 @@ async function deleteExpenseById(id) {
   if (error) throw error;
 }
 
-// Eventos
+// ======================
+// Eventos UI Presupuesto mensual
+// ======================
+// Boton guardar presupuesto
 btnSaveBudget?.addEventListener("click", async () => {
   const fam = getFam();
   if (!fam) return alert("Primero guarda el código de familia");
 
-  const val = Number(inpBudget.value || 0);
-  if (Number.isNaN(val) || val < 0) return alert("Presupuesto inválido");
+  const val = Number(inpBudget.value || 0);// Leemos el valor del input
+  if (Number.isNaN(val) || val < 0) return alert("Presupuesto inválido");// Validamos el valor
 
+  // Guardamos el presupuesto en Supabase
   try {
     currentBudget = val;
     await saveBudgetMonth(fam, currentMonth, val);
@@ -426,16 +461,18 @@ btnSaveBudget?.addEventListener("click", async () => {
   }
 });
 
+// Boton añadir gasto
 btnAddExpense?.addEventListener("click", async () => {
   const fam = getFam();
   if (!fam) return alert("Primero guarda el código de familia");
 
-  const place = (inpPlace.value || "").trim();
-  const amount = Number(inpAmount.value || 0);
+  const place = (inpPlace.value || "").trim();// Leemos y limpiamos el lugar
+  const amount = Number(inpAmount.value || 0);// Leemos y convertimos la cantidad a numero
 
-  if (!place) return alert("Escribe el lugar");
-  if (Number.isNaN(amount) || amount <= 0) return alert("Cantidad inválida");
+  if (!place) return alert("Escribe el lugar");// Validamos que no este en blanco el lugar
+  if (Number.isNaN(amount) || amount <= 0) return alert("Cantidad inválida");// Validamos que la cantidad no sea negativa o NaN
 
+  // Añadimos el gasto en Supabase
   try {
     const row = await addExpense(fam, currentMonth, place, amount);
     expenses.unshift(row);
@@ -449,7 +486,7 @@ btnAddExpense?.addEventListener("click", async () => {
         type: "budget",
         title: "Nuevo gasto",
         body: `${place}: ${amount.toFixed(2)} €`,
-        url: `/?section=budget`,
+        url: `/planing-familiar/?section=budget`,
         deviceId
       })
     });
@@ -463,6 +500,7 @@ btnAddExpense?.addEventListener("click", async () => {
   }
 });
 
+// Boton limpiar gastos
 btnClearExpenses?.addEventListener("click", async () => {
   const fam = getFam();
   if (!fam) return alert("Primero guarda el código de familia");
@@ -626,7 +664,7 @@ async function saveDay(dia) {
         type: "meal",
         title: "Comida actualizada",
         body: `Se actualizó ${dia}`,
-        url: `/?dia=${encodeURIComponent(dia)}`,
+        url: `/planing-familiar/?dia=${encodeURIComponent(dia)}`,
         deviceId
       })
     });
