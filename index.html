@@ -27,11 +27,16 @@
   <section class="card">
     <div class="header-row">
       <h2>Lista de la compra</h2>
-      <button id="btnEliminar" class="btn danger" type="button">Eliminar</button>
+      <div>
+        <span id="shoppingTotal">Total: 0,00 €</span><!---->
+        <button id="btnEliminar" class="btn danger" type="button">Eliminar</button>
+      </div>
     </div>
 
     <div class="row-add">
       <input id="inpProducto" type="text" placeholder="Añade un producto…" autocomplete="off" />
+      <input id="inpCantidad" type="text" placeholder="Cantidad (ej: 1, 2, 3...)" /><!---->
+      <input id="inpPrecio" type="number" step="0.01" min="0" placeholder="€/ud o €/kg" /><!---->
       <button id="btnAdd" class="btn primary" type="button">Añadir</button>
     </div>
 

@@ -35,14 +35,26 @@ async function ensureFamilyExists(fam) {
   if (error) throw error;
 }
 
+function parseNumberES(value) {
+  const s = String(value ?? "").trim().replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+const eur = (n) =>
+  new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
+
 // ======================
 // Lista de compra (Supabase)
 // ======================
 
 const inpProducto = document.getElementById("inpProducto");
+const inpCantidad = document.getElementById("inpCantidad");
+const inpPrecio = document.getElementById("inpPrecio");
 const btnAdd = document.getElementById("btnAdd");
 const btnEliminar = document.getElementById("btnEliminar");
 const listaCompra = document.getElementById("listaCompra");
+const shoppingTotal = document.getElementById("shoppingTotal");
 
 let compra = [];
 let compraChannel = null;
@@ -69,10 +81,10 @@ async function loadCompraSupabase(fam) {
 }
 
 // Añade un item a la compra en Supabase con el codigo familiar
-async function addProductoSupabase(fam, text) {
+async function addProductoSupabase(fam, text, qty, unit_price) {
   const { data, error } = await sb
     .from("shopping_items")
-    .insert([{ fam, text }])
+    .insert([{ fam, text, qty, unit_price }])
     .select()
     .single();
 
@@ -136,13 +148,21 @@ async function addProductoUI() {
   if (!fam) return alert("Primero guarda el código de familia");
   if (!text) return;
 
+  const qty = parseNumberES(inpCantidad.value || "1");
+  const unit_price = parseNumberES(inpPrecio.value || "0");
+
+  if (!Number.isFinite(qty) || qty <= 0) return alert("Cantidad inválida");
+  if (!Number.isFinite(unit_price) || unit_price < 0) return alert("Precio inválido");
+
   try {
     await ensureFamilyExists(fam);
-    const nuevo = await addProductoSupabase(fam, text);
+    const nuevo = await addProductoSupabase(fam, text, qty, unit_price);
     compra.unshift(nuevo);
     renderCompra();
 
     inpProducto.value = "";
+    inpCantidad.value = "";
+    inpPrecio.value = "";
     inpProducto.focus();
   } catch (err) {
     console.error(err);
@@ -164,10 +184,10 @@ function toggleChecked(id, value) {
 
 // Renderiza la lista de la compra en la UI
 function renderCompra() {
-  if (!listaCompra) return;// Si no existe el elemento, salimos
-  listaCompra.innerHTML = "";// Limpiamos la lista antes de renderizar
+  if (!listaCompra) return;
+  listaCompra.innerHTML = "";
 
-  if (compra.length === 0) {// Si no hay items, mostramos mensaje
+  if (compra.length === 0) {
     const li = document.createElement("li");
     li.className = "item";
     li.innerHTML = `
@@ -175,10 +195,11 @@ function renderCompra() {
       <span class="text" style="opacity:.6">No hay productos todavía.</span>
     `;
     listaCompra.appendChild(li);
+    updateShoppingTotal();
     return;
   }
 
-  for (const item of compra) {// Recorremos los items y los añadimos a la lista
+  for (const item of compra) {
     const li = document.createElement("li");
     li.className = "item";
 
@@ -187,14 +208,37 @@ function renderCompra() {
     chk.checked = !!item.checked;
     chk.addEventListener("change", () => toggleChecked(item.id, chk.checked));
 
-    const span = document.createElement("span");
-    span.className = "text";
-    span.textContent = item.text;
+    const name = document.createElement("span");
+    name.className = "text";
+    name.textContent = item.text;
+
+    const qty = Number(item.qty ?? 0);
+    const unit = Number(item.unit_price ?? 0);
+    const lineTotal = qty * unit;
+
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = `${qty} × ${eur(unit)} = ${eur(lineTotal)}`;
 
     li.appendChild(chk);
-    li.appendChild(span);
+    li.appendChild(name);
+    li.appendChild(meta);
     listaCompra.appendChild(li);
   }
+
+  updateShoppingTotal();
+}
+
+// Actualiza el total de la compra en la UI
+function updateShoppingTotal() {
+  if (!shoppingTotal) return;
+  const total = compra.reduce((acc, item) => {
+    const qty = Number(item.qty ?? 0);
+    const unit = Number(item.unit_price ?? 0);
+    return acc + (qty * unit);
+  }, 0);
+
+  shoppingTotal.textContent = `Total: ${eur(total)}`;
 }
 
 // Suscripción en tiempo real a cambios en la lista de la compra
